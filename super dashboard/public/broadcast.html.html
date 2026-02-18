@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Emitir pantalla</h2>
+<button id="start">Compartir pantalla</button>
+
+<script>
+const ws = new WebSocket(location.origin.replace("http", "ws"));
+ws.onopen = () => ws.send(JSON.stringify({ type: "broadcaster" }));
+
+document.getElementById("start").onclick = async () => {
+  const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+  const pc = new RTCPeerConnection();
+
+  stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+  pc.onicecandidate = e => {
+    if (e.candidate) {
+      ws.send(JSON.stringify({ type: "signal", candidate: e.candidate }));
+    }
+  };
+
+  ws.onmessage = async e => {
+    const msg = JSON.parse(e.data);
+    if (msg.answer) await pc.setRemoteDescription(msg.answer);
+    if (msg.candidate) await pc.addIceCandidate(msg.candidate);
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  ws.send(JSON.stringify({ type: "signal", offer }));
+};
+</script>
+</body>
+</html>
