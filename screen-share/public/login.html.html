@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Acceso Viewer</h2>
+<input type="password" id="pw" placeholder="Password">
+<button onclick="login()">Entrar</button>
+<p id="msg"></p>
+
+<script>
+function login() {
+  const ws = new WebSocket(location.origin.replace("http", "ws"));
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify({
+      type: "auth",
+      password: document.getElementById("pw").value
+    }));
+  };
+
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === "auth-ok") {
+      sessionStorage.setItem("auth", "ok");
+      location.href = "/view.html";
+    } else {
+      document.getElementById("msg").innerText = "Password incorrecto";
+    }
+  };
+}
+</script>
+</body>
+</html>
